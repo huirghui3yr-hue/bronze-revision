@@ -281,7 +281,7 @@ end
 local remoteRequire
 
 local function makeEnv(meta)
-	local scriptInstance = resolveInstance(meta) or makeMissingProxy(meta.path)
+	local scriptInstance = meta.instance or resolveInstance(meta) or makeMissingProxy(meta.path)
 	local env = {
 		script = scriptInstance,
 		require = remoteRequire,
@@ -431,6 +431,7 @@ local function buildIndexes()
 
 		local instance = resolveInstance(meta)
 		if instance then
+			meta.instance = instance
 			Loader.metaByInstance[instance] = meta
 		end
 
