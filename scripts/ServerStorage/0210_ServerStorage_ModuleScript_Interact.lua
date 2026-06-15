@@ -1,0 +1,1 @@
+return {'The Swamps on Route 18 are usually filed With Radioactive Pokemon,', 'Try to stay clear of their way.'}

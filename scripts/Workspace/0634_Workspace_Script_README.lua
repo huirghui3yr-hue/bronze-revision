@@ -1,0 +1,7 @@
+print("You don't script ServerScriptService waring news bad account all shutdown")
+print("Don't not again you new account please go now.")
+print("I'm sorry don't roblox i'm quitting not sure update yes fixed pokemon working.")
+print("RIP - SandloxYT 2020-2022 Banned oh no sad.")
+print("RIP - lukds 2015-20XX Banned oh no sad.")
+print("You don't script ServerScriptService waring news bad account all shutdown")
+--end)

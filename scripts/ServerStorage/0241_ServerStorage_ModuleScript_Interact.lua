@@ -1,0 +1,1 @@
+return {'What....lab', 'Look Years of pokemon research are stored in that facility.'}

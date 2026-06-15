@@ -1,0 +1,1 @@
+return 'I\'m training my fists so that some day I can break right through this rock.'

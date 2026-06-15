@@ -1,0 +1,1 @@
+return {'Oh i\'m Dummy like now day of normal....okay bye!'}

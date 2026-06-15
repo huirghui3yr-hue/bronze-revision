@@ -1,0 +1,2 @@
+--[[DON'T WARINGS ACCOUNT ALL SHUTDOWN YOU GAMES CLOSED PLEASE NOW]]
+--CatalogSearchParams.new("lukds").banned = true
