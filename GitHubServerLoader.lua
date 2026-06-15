@@ -49,6 +49,50 @@ local function printf(formatText, ...)
 	print("[GitHubServerLoader] " .. string.format(formatText, ...))
 end
 
+local function metaLabel(meta)
+	if not meta then
+		return "<nil meta>"
+	end
+	return string.format(
+		"path=%s class=%s name=%s file=%s",
+		tostring(meta.path),
+		tostring(meta.className),
+		tostring(meta.name),
+		tostring(meta.file)
+	)
+end
+
+local function makeTracebackHandler(context)
+	return function(err)
+		local message = tostring(context) .. ": " .. tostring(err)
+		if type(debug) == "table" and type(debug.traceback) == "function" then
+			message = message .. "\n" .. debug.traceback(nil, 2)
+		end
+		return message
+	end
+end
+
+local function describeTarget(target)
+	local targetType = typeof(target)
+	if targetType == "Instance" then
+		local ok, fullName = pcall(function()
+			return target:GetFullName()
+		end)
+		return string.format(
+			"Instance class=%s name=%s fullName=%s",
+			tostring(target.ClassName),
+			tostring(target.Name),
+			ok and tostring(fullName) or "<GetFullName failed>"
+		)
+	end
+
+	if type(target) == "table" and target.__remotePath then
+		return "RemoteProxy path=" .. tostring(target.__remotePath)
+	end
+
+	return tostring(targetType) .. " " .. tostring(target)
+end
+
 local function normalizePath(path)
 	path = tostring(path or "")
 	path = path:gsub("^game%.", "")
@@ -280,15 +324,15 @@ local function executeModule(meta)
 	end
 
 	Loader.loadingModules[path] = true
-	local ok, result = pcall(function()
+	local ok, result = xpcall(function()
 		local source = fetchSource(meta)
 		local chunk = compileChunk(meta, source)
 		return chunk()
-	end)
+	end, makeTracebackHandler("remote module " .. metaLabel(meta)))
 	Loader.loadingModules[path] = nil
 
 	if not ok then
-		error("Runtime error in remote module " .. path .. ": " .. tostring(result), 2)
+		error("Runtime error in remote module " .. path .. "\n" .. tostring(result), 2)
 	end
 
 	Loader.moduleCache[path] = result
@@ -323,7 +367,19 @@ remoteRequire = function(target)
 		end
 
 		if target:IsA("ModuleScript") then
-			return nativeRequire(target)
+			local ok, result = xpcall(function()
+				return nativeRequire(target)
+			end, makeTracebackHandler("native require fallback for " .. describeTarget(target)))
+			if not ok then
+				error(
+					"Native require failed after remote lookup missed\n"
+						.. "Target: " .. describeTarget(target) .. "\n"
+						.. "Lookup path: " .. path .. "\n"
+						.. tostring(result),
+					2
+				)
+			end
+			return result
 		end
 
 		error("Cannot require non-module instance " .. path, 2)
@@ -345,7 +401,13 @@ remoteRequire = function(target)
 		error("Could not resolve remote module string " .. target, 2)
 	end
 
-	return nativeRequire(target)
+	local ok, result = xpcall(function()
+		return nativeRequire(target)
+	end, makeTracebackHandler("native require fallback for " .. describeTarget(target)))
+	if not ok then
+		error("Native require failed\nTarget: " .. describeTarget(target) .. "\n" .. tostring(result), 2)
+	end
+	return result
 end
 
 local function isRemoteModule(meta)
@@ -399,14 +461,14 @@ local function buildIndexes()
 end
 
 local function runScript(meta)
-	local ok, err = pcall(function()
+	local ok, err = xpcall(function()
 		local source = fetchSource(meta)
 		local chunk = compileChunk(meta, source)
 		chunk()
-	end)
+	end, makeTracebackHandler("remote script " .. metaLabel(meta)))
 
 	if not ok then
-		warnf("Runtime error in %s: %s", meta.path, tostring(err))
+		warnf("Runtime error in %s\n%s", meta.path, tostring(err))
 	end
 end
 
