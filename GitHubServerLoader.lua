@@ -33,8 +33,10 @@ local Loader = {
 	moduleCache = {},
 	loadingModules = {},
 	metaByPath = {},
+	metaByInstance = {},
 	moduleByPath = {},
 	moduleByFile = {},
+	moduleByInstance = {},
 	uniqueModuleByName = {},
 	missingProxyCache = {},
 }
@@ -315,7 +317,7 @@ remoteRequire = function(target)
 
 	if targetType == "Instance" then
 		local path = normalizePath(target:GetFullName())
-		local meta = Loader.moduleByPath[path]
+		local meta = Loader.moduleByInstance[target] or Loader.moduleByPath[path]
 		if meta then
 			return executeModule(meta)
 		end
@@ -365,8 +367,16 @@ local function buildIndexes()
 		meta.path = normalizePath(meta.path)
 		Loader.metaByPath[meta.path] = meta
 
+		local instance = resolveInstance(meta)
+		if instance then
+			Loader.metaByInstance[instance] = meta
+		end
+
 		if isRemoteModule(meta) then
 			Loader.moduleByPath[meta.path] = meta
+			if instance then
+				Loader.moduleByInstance[instance] = meta
+			end
 
 			if meta.file then
 				meta.file = normalizeRepoPath(meta.file)
