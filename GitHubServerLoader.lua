@@ -120,10 +120,28 @@ local function getServiceOrChild(name)
 	return game:FindFirstChild(name)
 end
 
+local function resolvePath(path)
+	path = normalizePath(path)
+	local first = path:match("^[^%.]+")
+	local current = first and getServiceOrChild(first) or nil
+	if not current then
+		return nil
+	end
+
+	for segment in string.gmatch(path:sub(#first + 2), "[^%.]+") do
+		current = current:FindFirstChild(segment)
+		if not current then
+			return nil
+		end
+	end
+
+	return current
+end
+
 local function resolveInstance(meta)
 	local segments = meta.segments
 	if type(segments) ~= "table" or not segments[1] then
-		return nil
+		return resolvePath(meta.path)
 	end
 
 	local current = getServiceOrChild(segments[1])
@@ -194,6 +212,7 @@ local function makeMissingProxy(path)
 					if parentMeta then
 						return resolveInstance(parentMeta) or makeMissingProxy(parentPath)
 					end
+					return resolvePath(parentPath) or makeMissingProxy(parentPath)
 				end
 				return nil
 			end
