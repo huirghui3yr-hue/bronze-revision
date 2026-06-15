@@ -53,6 +53,13 @@ local function normalizePath(path)
 	return path
 end
 
+local function normalizeRepoPath(path)
+	path = tostring(path or "")
+	path = path:gsub("\\", "/")
+	path = path:gsub("^/+", "")
+	return path
+end
+
 local function topSegment(path)
 	return tostring(path):match("^[^%.]+")
 end
@@ -66,9 +73,12 @@ local function isRunnableRoot(path)
 end
 
 local function encodePath(path)
+	path = normalizeRepoPath(path)
 	local encoded = {}
 	for segment in string.gmatch(path, "[^/]+") do
-		table.insert(encoded, HttpService:UrlEncode(segment))
+		if segment ~= "" then
+			table.insert(encoded, HttpService:UrlEncode(segment))
+		end
 	end
 	return table.concat(encoded, "/")
 end
@@ -266,10 +276,11 @@ end
 
 local function resolveStringModule(moduleName)
 	local key = normalizePath(moduleName)
+	local fileKey = normalizeRepoPath(key)
 
 	local meta = Loader.moduleByPath[key]
-		or Loader.moduleByFile[key]
-		or Loader.moduleByFile[key:gsub("%.lua$", "")]
+		or Loader.moduleByFile[fileKey]
+		or Loader.moduleByFile[fileKey:gsub("%.lua$", "")]
 		or Loader.uniqueModuleByName[key]
 
 	if meta then
@@ -339,8 +350,9 @@ local function buildIndexes()
 			Loader.moduleByPath[meta.path] = meta
 
 			if meta.file then
+				meta.file = normalizeRepoPath(meta.file)
 				Loader.moduleByFile[meta.file] = meta
-				Loader.moduleByFile[tostring(meta.file):gsub("%.lua$", "")] = meta
+				Loader.moduleByFile[meta.file:gsub("%.lua$", "")] = meta
 			end
 
 			local name = tostring(meta.name or "")
